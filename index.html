@@ -1,59 +1,166 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>シンプルカレンダー</title>
-  <style>
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #000; padding: 10px; text-align: center; }
-    th { background-color: #f0f0f0; }
-    td { height: 50px; }
-  </style>
-</head>
-<body>
-  <h1 id="monthYear"></h1>
-  <table id="calendar">
-    <thead>
-      <tr>
-        <th>日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th>
-      </tr>
-    </thead>
-    <tbody id="calendarBody">
-      <!-- 日付はここに追加 -->
-    </tbody>
-  </table>
-
-  <script>
-    function createCalendar(year, month) {
-      const calendarBody = document.getElementById("calendarBody");
-      calendarBody.innerHTML = ""; // 既存をクリア
-
-      document.getElementById("monthYear").textContent = `${year}年 ${month+1}月`;
-
-      const firstDay = new Date(year, month, 1).getDay(); // 1日の曜日
-      const lastDate = new Date(year, month + 1, 0).getDate(); // 月末日
-
-      let date = 1;
-      for (let i = 0; i < 6; i++) { // 最大6行
-        const row = document.createElement("tr");
-        for (let j = 0; j < 7; j++) {
-          const cell = document.createElement("td");
-          if (i === 0 && j < firstDay) {
-            cell.textContent = "";
-          } else if (date > lastDate) {
-            cell.textContent = "";
-          } else {
-            cell.textContent = date;
-            date++;
-          }
-          row.appendChild(cell);
-        }
-        calendarBody.appendChild(row);
-      }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ToDoリスト | Fixeve</title>
+<style>
+    body {
+        background-color: white;
+        font-family: "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+        margin: 0;
+        padding: 10px;
+        color: #00FF00; /* 緑文字 */
     }
 
-    const today = new Date();
-    createCalendar(today.getFullYear(), today.getMonth());
-  </script>
+    h1 {
+        text-align: center;
+        color: #00FF00;
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+        color: black;
+        border: 2px solid #000;
+    }
+
+    th, td {
+        border: 1px solid #000;
+        padding: 6px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #f5fff5;
+        color: #00cc00;
+    }
+
+    textarea {
+        width: 95%;
+        height: 40px;
+        border: none;
+        resize: none;
+        font-size: 14px;
+    }
+
+    select, input[type="date"] {
+        width: 90%;
+        font-size: 14px;
+    }
+
+    .home-link {
+        display: block;
+        margin-top: 20px;
+        text-align: left;
+    }
+
+    .home-link a {
+        text-decoration: none;
+        color: #00FF00;
+        font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+        th, td {
+            font-size: 12px;
+        }
+        textarea {
+            height: 30px;
+        }
+    }
+</style>
+</head>
+<body>
+    <h1>ToDo リスト</h1>
+
+    <table id="todoTable">
+        <thead>
+            <tr>
+                <th>内容</th>
+                <th>優先度</th>
+                <th>期限</th>
+                <th>進捗</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- JSで行を追加 -->
+        </tbody>
+    </table>
+
+    <div style="text-align:center; margin-top:10px;">
+        <button onclick="addRow()">＋ 行を追加</button>
+        <button onclick="saveData()">💾 保存</button>
+        <button onclick="clearData()">🗑 全削除</button>
+    </div>
+
+    <div class="home-link">
+        <a href="https://fixeve.github.io/">ホーム</a>
+    </div>
+
+<script>
+    const tableBody = document.querySelector("#todoTable tbody");
+
+    // 新しい行を追加
+    function addRow(content = "", priority = "△", deadline = "", progress = "未") {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><textarea>${content}</textarea></td>
+            <td>
+                <select>
+                    <option value="△" ${priority==="△"?"selected":""}>△</option>
+                    <option value="○" ${priority==="○"?"selected":""}>○</option>
+                    <option value="◎" ${priority==="◎"?"selected":""}>◎</option>
+                </select>
+            </td>
+            <td><input type="date" value="${deadline}"></td>
+            <td>
+                <select>
+                    <option value="未" ${progress==="未"?"selected":""}>未</option>
+                    <option value="完" ${progress==="完"?"selected":""}>完</option>
+                </select>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    }
+
+    // 保存
+    function saveData() {
+        const data = [];
+        tableBody.querySelectorAll("tr").forEach(tr => {
+            const tds = tr.querySelectorAll("td");
+            data.push({
+                content: tds[0].querySelector("textarea").value,
+                priority: tds[1].querySelector("select").value,
+                deadline: tds[2].querySelector("input").value,
+                progress: tds[3].querySelector("select").value
+            });
+        });
+        localStorage.setItem("fixeve_todo", JSON.stringify(data));
+        alert("保存しました ✅");
+    }
+
+    // 読み込み
+    function loadData() {
+        const saved = JSON.parse(localStorage.getItem("fixeve_todo") || "[]");
+        saved.forEach(item => addRow(item.content, item.priority, item.deadline, item.progress));
+        if (saved.length === 0) addRow(); // 空なら1行
+    }
+
+    // 全削除
+    function clearData() {
+        if (confirm("すべてのToDoを削除しますか？")) {
+            localStorage.removeItem("fixeve_todo");
+            tableBody.innerHTML = "";
+            addRow();
+        }
+    }
+
+    // 初期読み込み
+    loadData();
+</script>
 </body>
 </html>
