@@ -3,158 +3,79 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ToDoリスト | Fixeve</title>
+<title>Fixeve ToDoリスト</title>
 <style>
-    body {
-        background-color: white;
-        font-family: "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
-        margin: 0;
-        padding: 10px;
-        color: #00FF00;
-    }
-    h1 {
-        text-align: center;
-        color: #00FF00;
-        font-size: 28px;
-        margin-bottom: 20px;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        background-color: white;
-        color: black;
-        border: 2px solid #000;
-    }
-    th, td {
-        border: 1px solid #000;
-        padding: 6px;
-        text-align: center;
-    }
-    th {
-        background-color: #f5fff5;
-        color: #00cc00;
-    }
-    textarea {
-        width: 95%;
-        height: 40px;
-        border: none;
-        resize: none;
-        font-size: 14px;
-    }
-    select, input[type="date"] {
-        width: 90%;
-        font-size: 14px;
-    }
-    .button-area {
-        text-align: center;
-        margin-top: 10px;
-    }
-    button {
-        margin: 3px;
-        border: none;
-        background-color: #00FF00;
-        color: black;
-        font-size: 14px;
-        padding: 6px 12px;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: 0.2s;
-    }
-    button:hover {
-        opacity: 0.8;
-        transform: scale(1.03);
-    }
-    .home-btn {
-        display: block;
-        margin-top: 25px;
-        text-align: left;
-    }
-    .home-btn a {
-        text-decoration: none;
-    }
-    .home-btn button {
-        background-color: #00FF00;
-        color: black;
-        font-weight: bold;
-        padding: 8px 16px;
-    }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", sans-serif;
+    background-color: #fff;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 { color: #00ff00; font-size: 32px; }
+  table {
+    width: 95%; margin: 20px auto;
+    border-collapse: collapse;
+    border: 2px solid #000;
+  }
+  th, td {
+    border: 1px solid #000;
+    padding: 10px;
+    font-size: 18px;
+  }
+  th { color: #00ff00; }
+  select, input { font-size: 16px; }
+  #addRow { margin-top: 15px; padding: 10px 20px; font-size: 16px; }
+  a { display: block; color: #00ff00; margin-top: 20px; text-decoration: none; }
 </style>
 </head>
 <body>
-<h1>ToDo リスト</h1>
-
-<table id="todoTable">
+  <h1>ToDoリスト</h1>
+  <table id="todoTable">
     <thead>
-        <tr>
-            <th>内容</th>
-            <th>優先度</th>
-            <th>期限</th>
-            <th>進捗</th>
-        </tr>
+      <tr>
+        <th>内容</th>
+        <th>優先度</th>
+        <th>期限</th>
+        <th>進捗</th>
+      </tr>
     </thead>
-    <tbody></tbody>
-</table>
+    <tbody id="todoBody"></tbody>
+  </table>
 
-<div class="button-area">
-    <button onclick="addRow()">＋ 行を追加</button>
-    <button onclick="saveData()">💾 保存</button>
-    <button onclick="clearData()">🗑 全削除</button>
-</div>
-
-<div class="home-btn">
-    <a href="https://fixeve.github.io/fixeve-home/"><button>ホーム</button></a>
-</div>
+  <button id="addRow">＋ 追加</button>
+  <a href="https://fixeve.github.io/fixeve-home/">ホーム</a>
 
 <script>
-const tableBody = document.querySelector("#todoTable tbody");
+const body = document.getElementById("todoBody");
+let todos = JSON.parse(localStorage.getItem("fixeve_todo") || "[]");
 
-function addRow(content = "", priority = "△", deadline = "", progress = "未") {
-    const row = document.createElement("tr");
+function render(){
+  body.innerHTML="";
+  todos.forEach((t,i)=>{
+    let row = document.createElement("tr");
     row.innerHTML = `
-        <td><textarea>${content}</textarea></td>
-        <td><select>
-            <option value="△" ${priority==="△"?"selected":""}>△</option>
-            <option value="○" ${priority==="○"?"selected":""}>○</option>
-            <option value="◎" ${priority==="◎"?"selected":""}>◎</option>
-        </select></td>
-        <td><input type="date" value="${deadline}"></td>
-        <td><select>
-            <option value="未" ${progress==="未"?"selected":""}>未</option>
-            <option value="完" ${progress==="完"?"selected":""}>完</option>
-        </select></td>`;
-    tableBody.appendChild(row);
+      <td contenteditable="true" oninput="update(${i},'text',this.innerText)">${t.text||""}</td>
+      <td><select onchange="update(${i},'priority',this.value)">
+        <option ${t.priority==='△'?'selected':''}>△</option>
+        <option ${t.priority==='◯'?'selected':''}>◯</option>
+        <option ${t.priority==='◎'?'selected':''}>◎</option>
+      </select></td>
+      <td><input type="date" value="${t.deadline||""}" onchange="update(${i},'deadline',this.value)"></td>
+      <td><select onchange="update(${i},'status',this.value)">
+        <option ${t.status==='未'?'selected':''}>未</option>
+        <option ${t.status==='完'?'selected':''}>完</option>
+      </select></td>`;
+    body.appendChild(row);
+  });
+  save();
 }
 
-function saveData() {
-    const data = [];
-    tableBody.querySelectorAll("tr").forEach(tr => {
-        const tds = tr.querySelectorAll("td");
-        data.push({
-            content: tds[0].querySelector("textarea").value,
-            priority: tds[1].querySelector("select").value,
-            deadline: tds[2].querySelector("input").value,
-            progress: tds[3].querySelector("select").value
-        });
-    });
-    localStorage.setItem("fixeve_todo", JSON.stringify(data));
-    alert("保存しました ✅");
-}
+function update(i,key,val){ todos[i][key]=val; save(); }
+function save(){ localStorage.setItem("fixeve_todo", JSON.stringify(todos)); }
+document.getElementById("addRow").onclick=()=>{ todos.push({}); render(); };
 
-function loadData() {
-    const saved = JSON.parse(localStorage.getItem("fixeve_todo") || "[]");
-    saved.forEach(item => addRow(item.content, item.priority, item.deadline, item.progress));
-    if (saved.length === 0) addRow();
-}
-
-function clearData() {
-    if (confirm("すべてのToDoを削除しますか？")) {
-        localStorage.removeItem("fixeve_todo");
-        tableBody.innerHTML = "";
-        addRow();
-    }
-}
-
-loadData();
+render();
 </script>
 </body>
 </html>
