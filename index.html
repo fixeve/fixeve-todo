@@ -3,77 +3,221 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fixeve ToDoリスト</title>
+<title>Fixeve To Do</title>
+
 <style>
-  body {
-    font-family: "Hiragino Kaku Gothic ProN", sans-serif;
-    background-color: #fff;
-    text-align: center;
-    margin: 0;
-    padding: 20px;
-  }
-  h1 { color: #00ff00; font-size: 32px; }
-  table {
-    width: 95%; margin: 20px auto;
-    border-collapse: collapse;
-    border: 2px solid #000;
-  }
-  th, td {
-    border: 1px solid #000;
-    padding: 10px;
-    font-size: 18px;
-  }
-  th { color: #00ff00; }
-  select, input { font-size: 16px; }
-  #addRow { margin-top: 15px; padding: 10px 20px; font-size: 16px; }
-  a { display: block; color: #00ff00; margin-top: 20px; text-decoration: none; }
+:root{
+  --bg:#f4f6f8;
+  --card:#ffffff;
+  --text:#3a3a3a;        /* 目に優しい文字色 */
+  --sub:#6b6b6b;
+  --accent:#007aff;
+  --danger:#ff3b30;
+  --border:#e3e7ec;
+}
+body{
+  margin:0;
+  background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Helvetica Neue",Arial;
+  color:var(--text);
+}
+.container{
+  max-width:720px;
+  margin:0 auto;
+  padding:14px 14px 120px;
+}
+.header{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 4px;
+}
+.header h1{
+  margin:0;
+  font-size:20px;
+}
+
+/* ===== ToDoカード ===== */
+.todo-card{
+  background:var(--card);
+  border-radius:18px;            /* 丸み強め */
+  padding:14px;
+  margin-top:14px;
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+  border:1px solid var(--border);
+}
+.todo-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+.todo-title{
+  font-size:14px;
+  font-weight:600;
+  color:var(--sub);
+}
+.todo-text{
+  width:100%;
+  min-height:64px;
+  resize:vertical;
+  border-radius:14px;
+  border:1px solid #d7dce2;
+  padding:10px;
+  font-size:14px;
+  color:var(--text);
+  box-sizing:border-box;
+  background:#fafbfc;
+}
+.todo-meta{
+  display:flex;
+  gap:8px;
+  margin-top:12px;
+}
+select,input[type="date"]{
+  flex:1;
+  padding:8px;
+  border-radius:12px;
+  border:1px solid #d7dce2;
+  font-size:13px;
+  color:var(--sub);
+  background:#fff;
+}
+
+/* ===== ボタン ===== */
+.delete-btn{
+  background:#ffecec;
+  color:#c70000;
+  border:none;
+  border-radius:999px;
+  padding:6px 14px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+}
+.add-btn{
+  background:var(--accent);
+  color:white;
+  border:none;
+  border-radius:999px;
+  padding:14px;
+  font-weight:700;
+  width:100%;
+  margin-top:16px;
+}
+
+/* ===== 下部 ===== */
+.bottom-bar{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  background:#fff;
+  border-top:1px solid var(--border);
+  padding:10px 14px 16px;
+}
+.bottom-bar a{
+  display:block;
+  text-align:center;
+  background:#e9ecef;
+  color:#333;
+  text-decoration:none;
+  padding:12px 0;
+  border-radius:999px;
+  font-weight:700;
+}
 </style>
 </head>
-<body>
-  <h1>ToDoリスト</h1>
-  <table id="todoTable">
-    <thead>
-      <tr>
-        <th>内容</th>
-        <th>優先度</th>
-        <th>期限</th>
-        <th>進捗</th>
-      </tr>
-    </thead>
-    <tbody id="todoBody"></tbody>
-  </table>
 
-  <button id="addRow">＋ 追加</button>
-  <a href="https://fixeve.github.io/fixeve-home/">ホーム</a>
+<body>
+<div class="container">
+  <div class="header">
+    <div style="font-size:22px">📝</div>
+    <h1>To Do</h1>
+  </div>
+
+  <div id="todoList"></div>
+
+  <button class="add-btn" onclick="addTodo()">＋ 追加</button>
+</div>
+
+<div class="bottom-bar">
+  <a href="https://fixeve.github.io/fixeve-home/">ホームへ戻る</a>
+</div>
 
 <script>
-const body = document.getElementById("todoBody");
-let todos = JSON.parse(localStorage.getItem("fixeve_todo") || "[]");
+const STORAGE_KEY = "fixeve_todo";
+let todos = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 
-function render(){
-  body.innerHTML="";
-  todos.forEach((t,i)=>{
-    let row = document.createElement("tr");
-    row.innerHTML = `
-      <td contenteditable="true" oninput="update(${i},'text',this.innerText)">${t.text||""}</td>
-      <td><select onchange="update(${i},'priority',this.value)">
-        <option ${t.priority==='△'?'selected':''}>△</option>
-        <option ${t.priority==='◯'?'selected':''}>◯</option>
-        <option ${t.priority==='◎'?'selected':''}>◎</option>
-      </select></td>
-      <td><input type="date" value="${t.deadline||""}" onchange="update(${i},'deadline',this.value)"></td>
-      <td><select onchange="update(${i},'status',this.value)">
-        <option ${t.status==='未'?'selected':''}>未</option>
-        <option ${t.status==='完'?'selected':''}>完</option>
-      </select></td>`;
-    body.appendChild(row);
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+}
+
+function addTodo(){
+  todos.push({
+    id: crypto.randomUUID(),
+    text:"",
+    priority:"○",
+    date:"",
+    status:"未"
   });
+  save();
+  render();
+}
+
+function deleteTodo(id){
+  if(!confirm("このTo Doを削除しますか？")) return;
+  todos = todos.filter(t=>t.id!==id);
+  save();
+  render();
+}
+
+function update(id,key,value){
+  const t = todos.find(x=>x.id===id);
+  t[key]=value;
   save();
 }
 
-function update(i,key,val){ todos[i][key]=val; save(); }
-function save(){ localStorage.setItem("fixeve_todo", JSON.stringify(todos)); }
-document.getElementById("addRow").onclick=()=>{ todos.push({}); render(); };
+function render(){
+  const list = document.getElementById("todoList");
+  list.innerHTML = "";
+  todos.forEach(t=>{
+    const card = document.createElement("div");
+    card.className = "todo-card";
+
+    card.innerHTML = `
+      <div class="todo-top">
+        <div class="todo-title">To Do</div>
+        <button class="delete-btn">削除</button>
+      </div>
+
+      <textarea class="todo-text" placeholder="内容を入力">${t.text}</textarea>
+
+      <div class="todo-meta">
+        <select>
+          <option ${t.priority==="△"?"selected":""}>△</option>
+          <option ${t.priority==="○"?"selected":""}>○</option>
+          <option ${t.priority==="◎"?"selected":""}>◎</option>
+        </select>
+
+        <input type="date" value="${t.date}">
+
+        <select>
+          <option ${t.status==="未"?"selected":""}>未</option>
+          <option ${t.status==="完"?"selected":""}>完</option>
+        </select>
+      </div>
+    `;
+
+    card.querySelector(".delete-btn").onclick = ()=>deleteTodo(t.id);
+    card.querySelector(".todo-text").oninput = e=>update(t.id,"text",e.target.value);
+    card.querySelectorAll("select")[0].onchange = e=>update(t.id,"priority",e.target.value);
+    card.querySelector("input").onchange = e=>update(t.id,"date",e.target.value);
+    card.querySelectorAll("select")[1].onchange = e=>update(t.id,"status",e.target.value);
+
+    list.appendChild(card);
+  });
+}
 
 render();
 </script>
